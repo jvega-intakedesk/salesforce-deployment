@@ -52,16 +52,28 @@ runs:
           npm install -g @salesforce/cli
           sf --version
 
+      - name: Installing SF Git Delta Plugin
+        shell: bash
+        run: |
+          echo y | sf plugins install sfdx-git-delta
+          sf plugins
+
+      - name: Installing Java
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt install default-jdk
+
       - name: Environment Login
         shell: bash
         run: |
           sf org login sfdx-url --set-default --sfdx-url-file <(echo "${{ inputs.SF_AUTH_URL }}")
 
-      - name: Generate Manifest
+      - name: Creating Delta packages for new, modified or deleted metadata
         shell: bash
         run: |
-          sf project generate manifest --source-dir ${{ inputs.MANIFEST_SOURCE_DIRECTORY }} --output-dir ${{ inputs.MANIFEST_OUTPUT_DIRECTORY }}
-      
+          sf sgd source delta --to "HEAD" --from "${{ github.sha }}" --output . --generate-delta --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/
+
       - name: Environment Deployment
         shell: bash
         run: |
