@@ -1,0 +1,82 @@
+name: ITD Salesforce Metadata Deployment
+description: Deployment script to build and deploy metadata to an specific Salesforce environment
+author: csilva-intakedesk
+branding:
+  icon: terminal
+  color: red
+inputs:
+  DRY_RUN:
+    description: Enable or disable the Salesforce project deploy --dry-run flag. If true, will execute as dry-run; otherwise false. Defaults to true.
+    type: boolean
+    default: true
+  TEST_LEVEL:
+    description: Salesforce project deploy --test-level parameter. Defaults to RunLocalTests.
+    type: choice
+    default: RunLocalTests
+    options:
+      - NoTestRun
+      - RunSpecifiedTests
+      - RunLocalTests
+      - RunAllTestsInOrg
+  TIMEOUT:
+    description: Salesforce project deploy --wait flag value. Timeout in minutes for the command to complete and display results. Defaults to 30.
+    type: number
+    default: 30
+  MANIFEST_SOURCE_DIRECTORY:
+    description: Source files path for project manifest generation --source-dir flag. Defaults to force-app.
+    type: string
+    default: force-app
+  MANIFEST_OUTPUT_DIRECTORY:
+    description: Output directoryfor project manifest generation --output-dir flag. Defaults to manifest.
+    type: string
+    default: manifest
+  VERBOSE:
+    description: Enable or disable the Salesforce project deploy flag for --verbose. If true, will execute as verbose; otherwise false. Defaults to true.
+    type: boolean
+    default: true
+  PACKAGE_SOURCE_DIRECTORY:
+    description: Salesforce project deploy --manifest file path flag. Defaults to manifest/package.xml
+    type: string
+    default: manifest/package.xml
+  SF_AUTH_URL:
+    description: The Salesforce Auth URL
+    type: string
+    required: true
+
+runs:
+  using: composite
+  steps:    
+      - name: Install Salesforce CLI
+        shell: bash
+        run: |
+          npm install -g @salesforce/cli
+          sf --version
+
+      - name: Environment Login
+        shell: bash
+        run: |
+          sf org login sfdx-url --set-default --sfdx-url-file <(echo "${{ inputs.SF_AUTH_URL }}")
+
+      - name: Generate Manifest
+        shell: bash
+        run: |
+          sf project generate manifest --source-dir ${{ inputs.MANIFEST_SOURCE_DIRECTORY }} --output-dir ${{ inputs.MANIFEST_OUTPUT_DIRECTORY }}
+      
+      - name: Environment Deployment
+        shell: bash
+        run: |
+          deployFlags=(
+              --manifest ${{ inputs.PACKAGE_SOURCE_DIRECTORY }}
+              --wait ${{ inputs.TIMEOUT }}
+              --test-level ${{ inputs.TEST_LEVEL }}
+          )
+
+          if [ "${{ inputs.DRY_RUN }}" = "true"]; then
+            deployFlags+=( --dry-run )
+          fi
+
+          if [ "${{ inputs.VERBOSE }}" = "true"]; then
+            deployFlags+=( --verbose )
+          fi
+
+          sf project deploy start "${deployFlags[@]}"
