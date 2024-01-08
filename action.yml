@@ -72,7 +72,7 @@ runs:
       - name: Creating Delta packages for new, modified or deleted metadata
         shell: bash
         run: |
-          sf sgd source delta --to "HEAD" --from "${{ github.sha }}" --output . --generate-delta --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/
+          sf sgd source delta --from "HEAD" --to "${{ github.sha }}" --output . --generate-delta --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/
 
       - name: Environment Deployment
         shell: bash
