@@ -6,7 +6,7 @@ branding:
   color: red
 inputs:
   DRY_RUN:
-    description: Enable or disable the Salesforce project deploy --dry-run flag. If true, will execute as dry-run; otherwise false. Defaults to true.
+    description: Enable or disable the Salesforce project deploy --dry-run flag. This will also add --verbose to the option list. If true, will execute as dry-run; otherwise false. Defaults to true.
     type: boolean
     default: true
   TEST_LEVEL:
@@ -30,14 +30,14 @@ inputs:
     description: Output directoryfor project manifest generation --output-dir flag. Defaults to manifest.
     type: string
     default: manifest
-  VERBOSE:
-    description: Enable or disable the Salesforce project deploy flag for --verbose. If true, will execute as verbose; otherwise false. Defaults to true.
-    type: boolean
-    default: true
   PACKAGE_SOURCE_DIRECTORY:
     description: Salesforce project deploy --manifest file path flag. Defaults to manifest/package.xml
     type: string
     default: manifest/package.xml
+  DELTA_SOURCE_DIRECTORY:
+    description: Salesforce project deploy --manifest file path flag with the delta changes. Defaults to package/package.xml
+    type: string
+    default: package/package.xml
   SF_AUTH_URL:
     description: The Salesforce Auth URL
     type: string
@@ -45,7 +45,31 @@ inputs:
 
 runs:
   using: composite
-  steps:    
+  steps:
+      - name: Printing Github Variables in debug mode
+        shell: bash
+        run: |
+          echo "::debug:: CI : $CI"
+          echo "::debug::GITHUB_WORKFLOW : $GITHUB_WORKFLOW"
+          echo "::debug::GITHUB_RUN_ID : $GITHUB_RUN_ID"
+          echo "::debug::GITHUB_RUN_NUMBER : $GITHUB_RUN_NUMBER"
+          echo "::debug::GITHUB_ACTION : $GITHUB_ACTION"
+          echo "::debug::GITHUB_ACTIONS : $GITHUB_ACTIONS"
+          echo "::debug::GITHUB_ACTOR : $GITHUB_ACTOR"
+          echo "::debug::GITHUB_REPOSITORY : $GITHUB_REPOSITORY"
+          echo "::debug::GITHUB_EVENT_NAME : $GITHUB_EVENT_NAME"
+          echo "::debug::GITHUB_EVENT_PATH : $GITHUB_EVENT_PATH"
+          echo "::debug::GITHUB_WORKSPACE : $GITHUB_WORKSPACE"
+          echo "::debug::GITHUB_SHA : $GITHUB_SHA"
+          echo "::debug::GITHUB_REF : $GITHUB_REF"
+          echo "::debug::GITHUB_HEAD_REF : $GITHUB_HEAD_REF"
+          echo "::debug::GITHUB_BASE_REF : $GITHUB_BASE_REF"
+          echo "::debug::GITHUB_SERVER_URL : $GITHUB_SERVER_URL"
+          echo "::debug::GITHUB_API_URL : $GITHUB_API_URL"
+          echo "::debug::GITHUB_GRAPHQL_URL : $GITHUB_GRAPHQL_URL"
+          echo "::debug::BRANCH_NAME : ${{ github.event.pull_request.head.ref }}"
+          echo "::debug::GITHUB_REF : $GITHUB_REF"
+
       - name: Install Salesforce CLI
         shell: bash
         run: |
@@ -72,23 +96,52 @@ runs:
       - name: Creating Delta packages for new, modified or deleted metadata
         shell: bash
         run: |
-          sf sgd source delta --from "HEAD" --to "${{ github.sha }}" --output . --generate-delta --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/
+          git fetch origin "+refs/heads/*:refs/remotes/origin/*"
+          sf sgd source delta --from "origin/$GITHUB_BASE_REF" --to "origin/$GITHUB_HEAD_REF" --output . --generate-delta --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/
 
-      - name: Environment Deployment
+      - name: Environment Package(s) Deployment
         shell: bash
         run: |
-          deployFlags=(
-              --manifest ${{ inputs.PACKAGE_SOURCE_DIRECTORY }}
-              --wait ${{ inputs.TIMEOUT }}
-              --test-level ${{ inputs.TEST_LEVEL }}
-          )
+          if [ -f ${{ inputs.DELTA_SOURCE_DIRECTORY }} ]; then
+            echo  "::debug::Deploying Package(s) Changes: $GITHUB_BASE_REF to $GITHUB_HEAD_REF @ $GITHUB_REPOSITORY"
 
-          if [ "${{ inputs.DRY_RUN }}" = "true"]; then
-            deployFlags+=( --dry-run )
+            echo "::debug::Package Contents: $( cat ${{ inputs.DELTA_SOURCE_DIRECTORY }} )"
+
+            deployFlags=(
+                --manifest ${{ inputs.DELTA_SOURCE_DIRECTORY }}
+                --wait ${{ inputs.TIMEOUT }}
+                --test-level ${{ inputs.TEST_LEVEL }}
+            )
+
+            if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
+              deployFlags+=( --dry-run )
+              deployFlags+=( --verbose )
+            fi
+
+            sf project deploy start "${deployFlags[@]}"
+          else
+            echo  "::debug::No changes to deploy between $GITHUB_BASE_REF and $GITHUB_HEAD_REF @ $GITHUB_REPOSITORY"
           fi
+      - name: Environment Package(s) Destructive Changes Deployment
+        shell: bash
+        run: |
+          if [ -f destructiveChanges/destructiveChanges.xml ]; then
+            echo "::debug::Deploying Destructive Changes: $GITHUB_BASE_REF to $GITHUB_HEAD_REF @ $GITHUB_REPOSITORY"
 
-          if [ "${{ inputs.VERBOSE }}" = "true"]; then
-            deployFlags+=( --verbose )
+            echo "::debug::Package Contents: $( cat destructiveChanges/destructiveChanges.xml )"
+
+            deployFlags=(
+                --manifest destructiveChanges/destructiveChanges.xml
+                --wait ${{ inputs.TIMEOUT }}
+                --test-level ${{ inputs.TEST_LEVEL }}
+            )
+
+            if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
+              deployFlags+=( --dry-run )
+              deployFlags+=( --verbose )
+            fi
+
+            sf project deploy start "${deployFlags[@]}"
+          else
+            echo "::debug::No Destructive changes to deploy between $GITHUB_BASE_REF to $GITHUB_HEAD_REF $GITHUB_REPOSITORY @ $GITHUB_REPOSITORY"
           fi
-
-          sf project deploy start "${deployFlags[@]}"
