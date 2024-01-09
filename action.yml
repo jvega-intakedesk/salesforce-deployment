@@ -102,46 +102,38 @@ runs:
       - name: Environment Package(s) Deployment
         shell: bash
         run: |
-          if [ -f ${{ inputs.DELTA_SOURCE_DIRECTORY }} ]; then
-            echo  "::debug::Deploying Package(s) Changes: $GITHUB_BASE_REF to $GITHUB_HEAD_REF @ $GITHUB_REPOSITORY"
+          deployFlags=(
+              --wait ${{ inputs.TIMEOUT }}
+              --test-level ${{ inputs.TEST_LEVEL }}
+          )
 
+          if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
+            deployFlags+=( --dry-run )
+            deployFlags+=( --verbose )
+          fi
+
+          if [ -f ${{ inputs.DELTA_SOURCE_DIRECTORY }} ]; then
+            echo "::debug::Deploying Package(s) Changes: $GITHUB_BASE_REF to $GITHUB_HEAD_REF @ $GITHUB_REPOSITORY"
             echo "::debug::Package Contents: $( cat ${{ inputs.DELTA_SOURCE_DIRECTORY }} )"
 
-            deployFlags=(
+            deployFlags+=(
                 --manifest ${{ inputs.DELTA_SOURCE_DIRECTORY }}
-                --wait ${{ inputs.TIMEOUT }}
-                --test-level ${{ inputs.TEST_LEVEL }}
             )
-
-            if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
-              deployFlags+=( --dry-run )
-              deployFlags+=( --verbose )
-            fi
-
-            sf project deploy start "${deployFlags[@]}"
           else
-            echo  "::debug::No changes to deploy between $GITHUB_BASE_REF and $GITHUB_HEAD_REF @ $GITHUB_REPOSITORY"
+            echo "::debug::No changes to deploy between $GITHUB_BASE_REF and $GITHUB_HEAD_REF @ $GITHUB_REPOSITORY"
           fi
-      - name: Environment Package(s) Destructive Changes Deployment
-        shell: bash
-        run: |
-          if [ -f destructiveChanges/destructiveChanges.xml ]; then
-            echo "::debug::Deploying Destructive Changes: $GITHUB_BASE_REF to $GITHUB_HEAD_REF @ $GITHUB_REPOSITORY"
 
+          if [ -f destructiveChanges/destructiveChanges.xml ]; then
+            echo "::debug::Deploying Package(s) Destructive Changes: $GITHUB_BASE_REF to $GITHUB_HEAD_REF @ $GITHUB_REPOSITORY"
             echo "::debug::Package Contents: $( cat destructiveChanges/destructiveChanges.xml )"
 
-            deployFlags=(
-                --manifest destructiveChanges/destructiveChanges.xml
-                --wait ${{ inputs.TIMEOUT }}
-                --test-level ${{ inputs.TEST_LEVEL }}
+            deployFlags+=(
+                --post-destructive-changes destructiveChanges/destructiveChanges.xml
             )
-
-            if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
-              deployFlags+=( --dry-run )
-              deployFlags+=( --verbose )
-            fi
-
-            sf project deploy start "${deployFlags[@]}"
           else
             echo "::debug::No Destructive changes to deploy between $GITHUB_BASE_REF to $GITHUB_HEAD_REF $GITHUB_REPOSITORY @ $GITHUB_REPOSITORY"
           fi
+
+          echo "::debug::Command being executed: sf project deploy start ${deployFlags[@]}"
+
+          sf project deploy start "${deployFlags[@]}"
