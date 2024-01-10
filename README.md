@@ -10,6 +10,8 @@ A ***delta*** is the difference between the files or 2 set of files. In the cont
 |INPUT         |Optional|Type     |Default Value|Options|Description|
 |--------------|:------:|:-------:|:-----------:|:-----:|:---------:|
 |SF_AUTH_URL|N|string|-|-|The Salesforce Auth URL.|
+|DELTA_FROM_SOURCE|N|string|-|-|The from source that will be used on the sgd delta.|
+|DELTA_TO_SOURCE|N|string|-|-|The to source that will be used on the sgd delta.|
 |DRY_RUN|Y|boolean|true|-|Enable or disable the Salesforce project deploy `--dry-run` and `--verbose` flags.|
 |TEST_LEVEL|Y|option|RunLocalTests|NoTestRun, RunSpecifiedTests, RunLocalTests, RunAllTestsInOrg|Salesforce project deploy `--test-level` parameter. Defaults to RunLocalTests.|
 |TIMEOUT|Y|number|30|-|Salesforce project deploy `--wait` flag value. Timeout in minutes for the command to complete and display results|

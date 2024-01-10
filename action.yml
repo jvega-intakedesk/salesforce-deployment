@@ -38,6 +38,14 @@ inputs:
     description: Salesforce project deploy --manifest file path flag with the delta changes. Defaults to package/package.xml
     type: string
     default: package/package.xml
+  DELTA_FROM_SOURCE:
+    description: The from source that will be used on the sgd delta.
+    type: string
+    required: true
+  DELTA_TO_SOURCE:
+    description: The to source that will be used on the sgd delta.
+    type: string
+    required: true
   SF_AUTH_URL:
     description: The Salesforce Auth URL
     type: string
@@ -99,7 +107,7 @@ runs:
           git fetch origin "+refs/heads/*:refs/remotes/origin/*"
 
           echo "::debug::Command being executed: sf sgd source delta --from \"origin/$GITHUB_BASE_REF\" --to \"origin/$GITHUB_HEAD_REF\" --output . --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/ --generate-delta"
-          sf sgd source delta --from "origin/$GITHUB_BASE_REF" --to "origin/$GITHUB_HEAD_REF" --output . --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/ --generate-delta
+          sf sgd source delta --from "${{ inputs.DELTA_FROM_SOURCE }}" --to "${{ inputs.DELTA_TO_SOURCE }}" --output . --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/ --generate-delta
 
       - name: Environment Package(s) Deployment
         shell: bash
@@ -115,7 +123,7 @@ runs:
           fi
 
           if [ -f ${{ inputs.DELTA_SOURCE_DIRECTORY }} ]; then
-            echo "::debug::Deploying Package(s) Changes: $GITHUB_BASE_REF to $GITHUB_HEAD_REF @ $GITHUB_REPOSITORY"
+            echo "::debug::Deploying Package(s) Changes: ${{ inputs.DELTA_FROM_SOURCE }} to ${{ inputs.DELTA_TO_SOURCE }} @ $GITHUB_REPOSITORY"
             echo "::debug::Package Contents: $( cat ${{ inputs.DELTA_SOURCE_DIRECTORY }} )"
 
             deployFlags+=(
@@ -126,14 +134,14 @@ runs:
           fi
 
           if [ -f destructiveChanges/destructiveChanges.xml ]; then
-            echo "::debug::Deploying Package(s) Destructive Changes: $GITHUB_BASE_REF to $GITHUB_HEAD_REF @ $GITHUB_REPOSITORY"
+            echo "::debug::Deploying Package(s) Destructive Changes: ${{ inputs.DELTA_FROM_SOURCE }} to ${{ inputs.DELTA_TO_SOURCE }} @ $GITHUB_REPOSITORY"
             echo "::debug::Package Contents: $( cat destructiveChanges/destructiveChanges.xml )"
 
             deployFlags+=(
                 --post-destructive-changes destructiveChanges/destructiveChanges.xml
             )
           else
-            echo "::debug::No Destructive changes to deploy between $GITHUB_BASE_REF to $GITHUB_HEAD_REF $GITHUB_REPOSITORY @ $GITHUB_REPOSITORY"
+            echo "::debug::No Destructive changes to deploy between ${{ inputs.DELTA_FROM_SOURCE }} to ${{ inputs.DELTA_TO_SOURCE }} @ $GITHUB_REPOSITORY"
           fi
 
           echo "::debug::Command being executed: sf project deploy start ${deployFlags[@]}"
