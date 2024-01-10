@@ -102,8 +102,8 @@ runs:
             --output .
             --generate-delta
             --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/
-            --from origin/$GITHUB_BASE_REF
-            --to origin/$GITHUB_HEAD_REF
+            --from "origin/$GITHUB_BASE_REF"
+            --to "origin/$GITHUB_HEAD_REF"
           )
 
           echo "::debug::Command being executed: sf sgd source delta ${deltaFlags[@]}"
