@@ -97,7 +97,17 @@ runs:
         shell: bash
         run: |
           git fetch origin "+refs/heads/*:refs/remotes/origin/*"
-          sf sgd source delta --from "origin/$GITHUB_BASE_REF" --to "origin/$GITHUB_HEAD_REF" --output . --generate-delta --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/
+
+          deltaFlags=(
+            --output .
+            --generate-delta
+            --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/
+            --from origin/$GITHUB_BASE_REF
+            --to origin/$GITHUB_HEAD_REF
+          )
+
+          echo "::debug::Command being executed: sf sgd source delta ${deltaFlags[@]}"
+          sf sgd source delta "${deltaFlags[@]}"
 
       - name: Environment Package(s) Deployment
         shell: bash
@@ -135,5 +145,4 @@ runs:
           fi
 
           echo "::debug::Command being executed: sf project deploy start ${deployFlags[@]}"
-
           sf project deploy start "${deployFlags[@]}"
