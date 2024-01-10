@@ -106,7 +106,7 @@ runs:
         run: |
           git fetch origin "+refs/heads/*:refs/remotes/origin/*"
 
-          echo "::debug::Command being executed: sf sgd source delta --from \"origin/$GITHUB_BASE_REF\" --to \"origin/$GITHUB_HEAD_REF\" --output . --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/ --generate-delta"
+          echo "::debug::Command being executed: sf sgd source delta --from \"${{ inputs.DELTA_FROM_SOURCE }}\" --to \"${{ inputs.DELTA_TO_SOURCE }}\" --output . --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/ --generate-delta"
           sf sgd source delta --from "${{ inputs.DELTA_FROM_SOURCE }}" --to "${{ inputs.DELTA_TO_SOURCE }}" --output . --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/ --generate-delta
 
       - name: Environment Package(s) Deployment
