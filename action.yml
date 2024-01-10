@@ -98,16 +98,8 @@ runs:
         run: |
           git fetch origin "+refs/heads/*:refs/remotes/origin/*"
 
-          deltaFlags=(
-            --output .
-            --generate-delta
-            --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/
-            --from "origin/$GITHUB_BASE_REF"
-            --to "origin/$GITHUB_HEAD_REF"
-          )
-
-          echo "::debug::Command being executed: sf sgd source delta ${deltaFlags[@]}"
-          sf sgd source delta "${deltaFlags[@]}"
+          echo "::debug::Command being executed: sf sgd source delta --from \"origin/$GITHUB_BASE_REF\" --to \"origin/$GITHUB_HEAD_REF\" --output . --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/ --generate-delta"
+          sf sgd source delta --from "origin/$GITHUB_BASE_REF" --to "origin/$GITHUB_HEAD_REF" --output . --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/ --generate-delta
 
       - name: Environment Package(s) Deployment
         shell: bash
