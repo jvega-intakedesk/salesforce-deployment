@@ -10,6 +10,7 @@ A ***delta*** is the difference between the files or 2 set of files. In the cont
 |INPUT         |Optional|Type     |Default Value|Options|Description|
 |--------------|:------:|:-------:|:-----------:|:-----:|:---------:|
 |SF_AUTH_URL|N|string|-|-|The Salesforce Auth URL.|
+|SF_AUTH_USERNAME|N|string|-|-|The Salesforce username for login. Salesforce project deploy `-o` flag.|
 |DELTA_FROM_SOURCE|N|string|-|-|The from source that will be used on the sgd delta.|
 |DELTA_TO_SOURCE|N|string|-|-|The to source that will be used on the sgd delta.|
 |DRY_RUN|Y|boolean|true|-|Enable or disable the Salesforce project deploy `--dry-run` and `--verbose` flags.|

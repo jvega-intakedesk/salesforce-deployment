@@ -50,6 +50,10 @@ inputs:
     description: The Salesforce Auth URL
     type: string
     required: true
+  SF_AUTH_USERNAME:
+    description: The Salesforce username for login. Salesforce project deploy `-o` flag.
+    type: string
+    required: true
 
 runs:
   using: composite
@@ -123,6 +127,10 @@ runs:
           if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
             deployFlags+=( --dry-run )
             deployFlags+=( --verbose )
+          fi
+
+          if [ ! -z "${{ inputs.SF_AUTH_USERNAME }}" ]; then
+            deployFlags+=( -o ${{ inputs.SF_AUTH_USERNAME }} )
           fi
 
           if [ -f ${{ inputs.DELTA_SOURCE_DIRECTORY }} ]; then
