@@ -106,7 +106,7 @@ runs:
           sf org login sfdx-url --set-default --sfdx-url-file <(echo "${{ inputs.SF_AUTH_URL }}")
 
       - name: 'Checkout source code'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -159,7 +159,7 @@ runs:
           sf project deploy start "${deployFlags[@]}"
 
     - name: Write Package TO PR
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
         with:
           script: |
             github.rest.issues.createComment({
