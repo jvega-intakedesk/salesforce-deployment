@@ -136,16 +136,20 @@ runs:
 
 
             # Generate the JSON structure for running the tests
+            variable_content=""
             json_content="{\"tests\": ["
             for test_class in ${test_classes[@]}; do
                 json_content+="\"$test_class\","
+                variable_content+="\"$test_class\","
             done
             # Remove the trailing comma from the last item
             json_content="${json_content%,}"
             json_content+="]}"
 
             # Output the JSON content to a file
-            echo "$json_content" > run-tests.json
+            # echo "$json_content" > run-tests.json
+            echo ::debug::$variable_content
+            echo "RUN_SPECIFIED_TESTS_SELECTED=$variable_content" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Environment Package(s) Deployment
@@ -159,7 +163,7 @@ runs:
             deployFlags+=( --dry-run )
             deployFlags+=( --verbose )
             deployFlags+=( --test-level RunSpecifiedTests )
-            deployFlags+=( --tests run-tests.json )
+            deployFlags+=( --tests $RUN_SPECIFIED_TESTS_SELECTED )
           else
             deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
           fi
