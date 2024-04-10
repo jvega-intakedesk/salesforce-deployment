@@ -116,17 +116,52 @@ runs:
           echo "::debug::Command being executed: sf sgd source delta --from \"${{ inputs.DELTA_FROM_SOURCE }}\" --to \"${{ inputs.DELTA_TO_SOURCE }}\" --output . --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/ --generate-delta"
           sf sgd source delta --from "${{ inputs.DELTA_FROM_SOURCE }}" --to "${{ inputs.DELTA_TO_SOURCE }}" --output . --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/ --generate-delta
 
+      - name: Determining Specified Tests
+        shell: bash
+        run: |
+          if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
+            content=$(cat ${{ inputs.MANIFEST_SOURCE_DIRECTORY }})
+
+            test_classes=()
+            while IFS= read -r line; do
+                IFS='<' read -ra array <<< "$line"
+                for element in "${array[@]}"; do
+                    if [[ "$element" == "members>"* ]]; then
+                        member=$(echo "$element" | sed -e 's/members>//g')
+                        test_classes+=("$member")
+                    fi
+                done
+            done <<< "$content"
+            echo "::debug::${test_classes[@]}"
+
+
+            # Generate the JSON structure for running the tests
+            json_content="{\"tests\": ["
+            for test_class in ${test_classes[@]}; do
+                json_content+="\"$test_class\","
+            done
+            # Remove the trailing comma from the last item
+            json_content="${json_content%,}"
+            json_content+="]}"
+
+            # Output the JSON content to a file
+            echo "$json_content" > run-tests.json
+          fi
+
       - name: Environment Package(s) Deployment
         shell: bash
         run: |
           deployFlags=(
               --wait ${{ inputs.TIMEOUT }}
-              --test-level ${{ inputs.TEST_LEVEL }}
           )
 
           if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
             deployFlags+=( --dry-run )
             deployFlags+=( --verbose )
+            deployFlags+=( --test-level RunSpecifiedTests )
+            deployFlags+=( --tests run-tests.json )
+          else
+            deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
           fi
 
           if [ ! -z "${{ inputs.SF_AUTH_USERNAME }}" ]; then
