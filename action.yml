@@ -127,7 +127,7 @@ runs:
       shell: bash
       run: >
         if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
-          content=$(cat ${{ inputs.MANIFEST_SOURCE_DIRECTORY }})
+          content=$(cat ${{ inputs.DELTA_SOURCE_DIRECTORY }})
 
           test_classes=()
           while IFS= read -r line; do
