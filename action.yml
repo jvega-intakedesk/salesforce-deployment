@@ -169,15 +169,14 @@ runs:
           deployFlags+=( --verbose )
           deployFlags+=( --test-level RunSpecifiedTests )
           deployFlags+=( --tests run-tests.json )
+          deployFlags+=( --coverage-formatters text )
         else
           deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
         fi
 
-
         if [ ! -z "${{ inputs.SF_AUTH_USERNAME }}" ]; then
           deployFlags+=( -o ${{ inputs.SF_AUTH_USERNAME }} )
         fi
-
 
         if [ -f ${{ inputs.DELTA_SOURCE_DIRECTORY }} ]; then
           echo "::debug::Deploying Package(s) Changes: ${{ inputs.DELTA_FROM_SOURCE }} to ${{ inputs.DELTA_TO_SOURCE }} @ $GITHUB_REPOSITORY"
@@ -190,7 +189,6 @@ runs:
           echo "::debug::No changes to deploy between $GITHUB_BASE_REF and $GITHUB_HEAD_REF @ $GITHUB_REPOSITORY"
         fi
 
-
         if [ -f destructiveChanges/destructiveChanges.xml ]; then
           echo "::debug::Deploying Package(s) Destructive Changes: ${{ inputs.DELTA_FROM_SOURCE }} to ${{ inputs.DELTA_TO_SOURCE }} @ $GITHUB_REPOSITORY"
           echo "::debug::Package Contents: $( cat destructiveChanges/destructiveChanges.xml )"
@@ -202,7 +200,11 @@ runs:
           echo "::debug::No Destructive changes to deploy between ${{ inputs.DELTA_FROM_SOURCE }} to ${{ inputs.DELTA_TO_SOURCE }} @ $GITHUB_REPOSITORY"
         fi
 
-
         echo "::debug::Command being executed: sf project deploy start ${deployFlags[@]}"
 
         sf project deploy start "${deployFlags[@]}"
+
+         if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
+            file_path="coverage/coverage/text.txt"
+            cat "$file_path"
+         fi
