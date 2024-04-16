@@ -139,7 +139,7 @@ runs:
                   fi
               done
           done <<< "$content"
-          echo "::debug::${test_classes[@]}"
+          echo "::debug:: Test Classes = ${test_classes[@]}"
 
           # Generate the JSON structure for running the tests
           json_content="{\"tests\": ["
@@ -151,6 +151,7 @@ runs:
           json_content+="]}"
 
           # Output the JSON content to a file
+          echo "::debug:: JSON Content = $json_content"
           echo "$json_content" > run-tests.json
         fi
     - name: Environment Package(s) Deployment
