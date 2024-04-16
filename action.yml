@@ -170,6 +170,7 @@ runs:
           deployFlags+=( --verbose )
           deployFlags+=( --test-level RunSpecifiedTests )
           deployFlags+=( --tests run-tests.json )
+          deployFlags+=( --coverage-formatters text )
         else
           deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
         fi
@@ -203,3 +204,16 @@ runs:
         echo "::debug::Command being executed: sf project deploy start ${deployFlags[@]}"
 
         sf project deploy start "${deployFlags[@]}"
+    - name: Determining Specified Tests
+      shell: bash
+      run: >
+        if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
+          file_path="coverage/coverage/text.txt"
+
+          if [ -f "$file_path" ]; then
+              echo "::debug:: Coverage Result:"
+              echo "::debug:: $(cat "$file_path")"
+          else
+              echo "Coverage file not found at $file_path"
+          fi
+        fi
