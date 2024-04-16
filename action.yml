@@ -205,12 +205,10 @@ runs:
 
         sf project deploy start "${deployFlags[@]}"
 
-         if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
-            file_path="coverage/coverage/text.txt"
-            if [ -f "$file_path" ]; then
-                echo "::debug:: Test coverage file contents:"
-                echo "$(cat "$file_path")"
-            else
-                echo "::debug:: File not found at $file_path"
-            fi
-         fi
+        file_path="coverage/coverage/text.txt"
+        if [ -f "$file_path" ]; then
+            echo "::debug:: Test coverage file contents:"
+            echo "$(cat "$file_path")"
+        else
+            echo "::debug:: File not found at $file_path"
+        fi
