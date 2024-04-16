@@ -142,6 +142,10 @@ runs:
           done <<< "$content"
           echo "::debug:: Test Classes = ${test_classes[@]}"
 
+          test_classes_csv=$(IFS=,; echo "${test_classes[*]}")
+          echo "$test_classes_csv" > "run-tests.txt"
+          echo "::debug:: Test Classes Content = $test_classes_csv"
+
           # Generate the JSON structure for running the tests
           json_content="{\"tests\": ["
           for test_class in ${test_classes[@]}; do
@@ -166,11 +170,11 @@ runs:
         echo "::debug:: $testRunContents"
 
         if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
+          classesToRun=$(cat "run-tests.txt")
           deployFlags+=( --dry-run )
           deployFlags+=( --verbose )
           deployFlags+=( --test-level RunSpecifiedTests )
-          deployFlags+=( --tests run-tests.json )
-          deployFlags+=( --coverage-formatters text )
+          deployFlags+=( "--tests" "$classesToRun" )
         else
           deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
         fi
@@ -204,16 +208,3 @@ runs:
         echo "::debug::Command being executed: sf project deploy start ${deployFlags[@]}"
 
         sf project deploy start "${deployFlags[@]}"
-    - name: Determining Specified Tests
-      shell: bash
-      run: >
-        if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
-          file_path="coverage/coverage/text.txt"
-
-          if [ -f "$file_path" ]; then
-              echo "::debug:: Coverage Result:"
-              echo "::debug:: $(cat "$file_path")"
-          else
-              echo "Coverage file not found at $file_path"
-          fi
-        fi
