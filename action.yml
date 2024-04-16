@@ -135,7 +135,8 @@ runs:
               for element in "${array[@]}"; do
                   if [[ "$element" == "members>"* ]]; then
                       member=$(echo "$element" | sed -e 's/members>//g')
-                      test_classes+=("$member")
+                      member_with_test="${member}Test"  # Append "Test" to the result of sed
+                      test_classes+=("$member_with_test")
                   fi
               done
           done <<< "$content"
@@ -206,5 +207,10 @@ runs:
 
          if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
             file_path="coverage/coverage/text.txt"
-            cat "::debug:: $file_path"
+            if [ -f "$file_path" ]; then
+                echo "::debug:: Test coverage file contents:"
+                echo "$(cat "$file_path")"
+            else
+                echo "::debug:: File not found at $file_path"
+            fi
          fi
