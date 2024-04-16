@@ -206,5 +206,5 @@ runs:
 
          if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
             file_path="coverage/coverage/text.txt"
-            cat "$file_path"
+            cat "::debug:: $file_path"
          fi
