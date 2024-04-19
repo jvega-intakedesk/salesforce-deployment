@@ -104,8 +104,7 @@ runs:
     - name: Install Salesforce CLI
       shell: bash
       run: |
-        npm install -g @salesforce/cli
-        npm outdated
+        npm install -g @salesforce/cli/2.15.9
         sf version --verbose --json
     - name: Installing SF Git Delta Plugin
       shell: bash
@@ -115,8 +114,7 @@ runs:
     - name: Environment Login
       shell: bash
       run: >
-        sf org login sfdx-url --set-default --sfdx-url-file <(echo "${{
-        inputs.SF_AUTH_URL }}")
+        sf org login sfdx-url --set-default --sfdx-url-file <(echo "${{ inputs.SF_AUTH_URL }}")
     - name: Checkout source code
       uses: actions/checkout@v4
       with:
