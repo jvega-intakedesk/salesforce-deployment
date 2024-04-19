@@ -107,7 +107,7 @@ runs:
         npm -v
         sudo npm install -g npm@latest
         sudo npm install -g n
-        n lts
+        sudo n lts
         echo "::debug:: Node version after update"
         node -v
         echo "::debug:: NPM version after update"
