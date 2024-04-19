@@ -100,11 +100,23 @@ runs:
       run: |
         sudo apt-get update
         sudo apt install default-jdk
-        sudo apt-get install xmlstarlet        
+        sudo apt-get install xmlstarlet
+        echo "::debug:: Node version before update"
+        node -v
+        echo "::debug:: NPM version before update"
+        npm -v
+        npm install -g npm@latest
+        npm install -g n
+        n lts
+        echo "::debug:: Node version after update"
+        node -v
+        echo "::debug:: NPM version after update"
+        npm -v
     - name: Install Salesforce CLI
       shell: bash
       run: |
-        npm install -g @salesforce/cli@2.15.9
+        # npm install -g @salesforce/cli@2.15.9
+        npm install -g @salesforce/cli
         sf version --verbose --json
     - name: Installing SF Git Delta Plugin
       shell: bash
@@ -180,6 +192,7 @@ runs:
           classesToRun=$(cat "run-tests.txt")
           deployFlags+=( --dry-run )
           deployFlags+=( --verbose )
+          
           # deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
 
           deployFlags+=( --test-level RunSpecifiedTests )
