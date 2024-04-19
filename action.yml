@@ -71,7 +71,7 @@ runs:
       shell: bash
       run: |
         echo "::debug:: Add here the number of times you changed this and it broke:"
-        echo "::debug:: 18"
+        echo "::debug:: 22"
     - name: Printing Github Variables in debug mode
       shell: bash
       run: |
@@ -105,8 +105,8 @@ runs:
         node -v
         echo "::debug:: NPM version before update"
         npm -v
-        npm install -g npm@latest
-        npm install -g n
+        sudo npm install -g npm@latest
+        sudo npm install -g n
         n lts
         echo "::debug:: Node version after update"
         node -v
