@@ -155,7 +155,7 @@ runs:
           # Read each line from filtered_members and concatenate them into deployFlagsConcatenated
           while IFS= read -r member; do
               # Append "Test" to the member without quotes
-              deployFlagsConcatenated+="${member}Test, "
+              deployFlagsConcatenated+="${member}Test "
           done <<< "$filtered_members"
 
           # Remove the trailing comma and space from deployFlagsConcatenated
@@ -182,7 +182,7 @@ runs:
           deployFlags+=( --dry-run )
           deployFlags+=( --verbose )
           deployFlags+=( --test-level RunSpecifiedTests )
-          deployFlags+=( --tests "\"$classesToRun\"" )
+          deployFlags+=( --tests "$classesToRun" )
 
           #while IFS= read -r line; do
           #    deployFlags+=("--tests $line")
