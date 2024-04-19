@@ -184,11 +184,9 @@ runs:
 
                 # Check if the trimmed class name ends with "Test" before adding
                 if [[ ! "$trimmed_class_name" =~ Test$ ]]; then
-                    test_classes_concatenated+=" ${trimmed_class_name}Test,"
+                    test_classes_concatenated+="--tests \"${trimmed_class_name}Test\""
                 fi
             done
-
-            test_classes_concatenated=$(echo "$test_classes_concatenated" | sed 's/,\s*$//')
 
             # Remove the trailing space from the concatenated string
             test_classes_concatenated="${test_classes_concatenated%" "}"
