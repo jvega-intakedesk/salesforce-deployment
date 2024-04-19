@@ -152,6 +152,8 @@ runs:
                 test_classes+=" --tests \"${member}Test\" "
             done <<< "$filtered_members"
 
+            echo "::debug:: Tests being executed: $test_classes"
+
             # Save the test_classes array into a file using echo
             echo "$test_classes" >> run-tests.txt
         fi
