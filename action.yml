@@ -71,7 +71,7 @@ runs:
       shell: bash
       run: |
         echo "::debug:: Add here the number of times you changed this and it broke:"
-        echo "::debug:: 17"
+        echo "::debug:: 18"
     - name: Printing Github Variables in debug mode
       shell: bash
       run: |
@@ -105,6 +105,7 @@ runs:
       shell: bash
       run: |
         npm install -g @salesforce/cli
+        npm outdated
         sf version --verbose --json
     - name: Installing SF Git Delta Plugin
       shell: bash
@@ -181,10 +182,10 @@ runs:
           classesToRun=$(cat "run-tests.txt")
           deployFlags+=( --dry-run )
           deployFlags+=( --verbose )
-          deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
+          # deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
 
-          # deployFlags+=( --test-level RunSpecifiedTests )
-          # deployFlags+=( --tests "$classesToRun" )          
+          deployFlags+=( --test-level RunSpecifiedTests )
+          deployFlags+=( --tests "$classesToRun" )          
 
           # while IFS= read -r line; do
           #     deployFlags+=("--tests $line")
