@@ -115,7 +115,7 @@ runs:
     - name: Install Salesforce CLI
       shell: bash
       run: |
-        # npm install -g @salesforce/cli
+        # npm install -g @salesforce/cli@2.19.5
         npm install -g @salesforce/cli
         sf version --verbose --json
     - name: Installing SF Git Delta Plugin
@@ -193,10 +193,10 @@ runs:
           deployFlags+=( --dry-run )
           deployFlags+=( --verbose )
           
-          # deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
+          deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
 
-          deployFlags+=( --test-level RunSpecifiedTests )
-          deployFlags+=( --tests "$classesToRun" )          
+          # deployFlags+=( --test-level RunSpecifiedTests )
+          # deployFlags+=( --tests "$classesToRun" )          
 
           # while IFS= read -r line; do
           #     deployFlags+=("--tests $line")
