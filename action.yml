@@ -71,7 +71,7 @@ runs:
       shell: bash
       run: |
         echo "::debug:: Add here the number of times you changed this and it broke:"
-        echo "::debug:: 13"
+        echo "::debug:: 16"
     - name: Printing Github Variables in debug mode
       shell: bash
       run: |
@@ -181,8 +181,9 @@ runs:
           classesToRun=$(cat "run-tests.txt")
           deployFlags+=( --dry-run )
           deployFlags+=( --verbose )
-          deployFlags+=( --test-level RunSpecifiedTests )
-          deployFlags+=( --tests "$classesToRun" )
+          #deployFlags+=( --test-level RunSpecifiedTests )
+          $deployFlags+=( --tests "$classesToRun" )
+          deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
 
           #while IFS= read -r line; do
           #    deployFlags+=("--tests $line")
