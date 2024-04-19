@@ -110,6 +110,10 @@ runs:
       run: |
         sudo apt-get update
         sudo apt install default-jdk
+    - name: Installing XMLStarLet
+      shell: bash
+      run: |
+        sudo apt-get install xmlstarlet
     - name: Environment Login
       shell: bash
       run: >
@@ -137,69 +141,19 @@ runs:
             echo "::debug:: XML Content:"
             echo "$content"
 
+            # Use xmlstarlet to extract the desired members
+            filtered_members=$(echo "$content" | xmlstarlet sel -N ns="http://soap.sforce.com/2006/04/metadata" \
+                -t -m "//ns:types[ns:name='ApexClass']/ns:members[not(contains(., 'Test'))]" -v . -n)
+
+            # Append "--test " and "Test" to each filtered member and add them to the test_classes array
+            > run-tests.txt
             test_classes=()
-            in_apex_class=false
+            while IFS= read -r member; do
+                test_classes+=" --tests \"${member}Test\" "
+            done <<< "$filtered_members"
 
-            # Use awk to extract the relevant section
-            types_block=$(echo "$content" | awk '/<types>/,/<\/types>/')
-
-            if [ -n "$types_block" ]; then
-                echo "::debug:: Found types block for ApexClass:"
-                echo "$types_block"
-
-                in_apex_class=false
-                while IFS= read -r line; do
-                    if [[ "$line" == *"<name>ApexClass</name>"* ]]; then
-                        echo "::debug:: in_apex_class $in_apex_class"
-                        in_apex_class=true
-                    else
-                        echo "::debug:: line $line"
-                    fi
-                done <<< "$types_block"
-
-                echo "::debug:: in_apex_class $in_apex_class"
-                while IFS= read -r line; do
-                    if [ "$in_apex_class" = true ] && [[ "$line" == *"<members>"* ]]; then
-                        member=$(echo "$line" | sed -e 's/<members>//g' -e 's/<\/members>//g')
-                        echo "::debug:: member $member"
-                        if [[ ! "$member" =~ Test$ ]]; then
-                            test_classes+=("$member")
-                            echo "::debug:: Added class: $member"
-                        else
-                            echo "::debug:: Skipped member ending with 'Test': $member"
-                        fi
-                    fi
-                done <<< "$types_block"
-            else
-                echo "::debug:: Did not find types block for ApexClass"
-            fi
-
-            echo "::debug:: Test Classes = ${test_classes[@]}"
-
-            # Concatenate test class names with "--tests classname"
-            test_classes_concatenated=""
-            for class_name in "${test_classes[@]}"; do
-                # Trim leading and trailing whitespace from class name
-                trimmed_class_name=$(echo "$class_name" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
-
-                # Check if the trimmed class name ends with "Test" before adding
-                if [[ ! "$trimmed_class_name" =~ Test$ ]]; then
-                    test_classes_concatenated+="--tests \"${trimmed_class_name}Test\""
-                fi
-            done
-
-            # Remove the trailing space from the concatenated string
-            test_classes_concatenated="${test_classes_concatenated%" "}"
-
-            echo "::debug:: Test Classes Content = $test_classes_concatenated"
-            echo "$test_classes_concatenated" > run-tests.txt
-
-            # Generate the JSON structure for running the tests
-            json_content="{\"tests\": [$test_classes_space_separated]}"
-
-            # Output the JSON content to a file
-            echo "::debug:: JSON Content = $json_content"
-            echo "$json_content" > run-tests.json
+            # Save the test_classes array into a file using echo
+            echo "$test_classes" >> run-tests.txt
         fi
     - name: Environment Package(s) Deployment
       shell: bash
