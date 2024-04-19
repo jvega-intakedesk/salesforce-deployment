@@ -184,7 +184,7 @@ runs:
 
                 # Check if the trimmed class name ends with "Test" before adding
                 if [[ ! "$trimmed_class_name" =~ Test$ ]]; then
-                    test_classes_concatenated+="--tests $trimmed_class_name "
+                    test_classes_concatenated+="--test ${trimmed_class_name}Test "
                 fi
             done
 
