@@ -71,7 +71,7 @@ runs:
       shell: bash
       run: |
         echo "::debug:: Add here the number of times you changed this and it broke:"
-        echo "::debug:: 11"
+        echo "::debug:: 13"
     - name: Printing Github Variables in debug mode
       shell: bash
       run: |
@@ -146,10 +146,12 @@ runs:
             > run-tests.txt
             test_classes=()
             while IFS= read -r member; do
-                test_classes+="\"${member}Test\" "
+                test_classes+="${member}Test, "
             done <<< "$filtered_members"
 
-            echo "::debug:: Tests being executed: $test_classes"
+            test_classes=$(echo "$test_classes" | sed 's/, *$//')
+
+            echo "::debug:: Test Classes: $test_classes";
 
             # Save the test_classes array into a file using echo
             echo "$test_classes" >> run-tests.txt
@@ -169,7 +171,7 @@ runs:
           deployFlags+=( --dry-run )
           deployFlags+=( --verbose )
           deployFlags+=( --test-level RunSpecifiedTests )
-          deployFlags+=( --tests "$classesToRun" )
+          deployFlags+=( --tests "\"$classesToRun\"" )
         else
           deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
         fi
