@@ -71,7 +71,7 @@ runs:
       shell: bash
       run: |
         echo "::debug:: Add here the number of times you changed this and it broke:"
-        echo "::debug:: 6"
+        echo "::debug:: 10"
     - name: Printing Github Variables in debug mode
       shell: bash
       run: |
@@ -162,7 +162,7 @@ runs:
             --wait ${{ inputs.TIMEOUT }}
         )
 
-        testRunContents=$(cat run-tests.json);
+        testRunContents=$(cat run-tests.txt);
         echo "::debug:: $testRunContents"
 
         if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
