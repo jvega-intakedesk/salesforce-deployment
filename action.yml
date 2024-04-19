@@ -216,7 +216,7 @@ runs:
           deployFlags+=( --dry-run )
           deployFlags+=( --verbose )
           deployFlags+=( --test-level RunSpecifiedTests )
-          deployFlags+=( "--tests $classesToRun" )
+          deployFlags+=( "$classesToRun" )
         else
           deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
         fi
