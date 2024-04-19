@@ -71,7 +71,7 @@ runs:
       shell: bash
       run: |
         echo "::debug:: Add here the number of times you changed this and it broke:"
-        echo "::debug:: 1"
+        echo "::debug:: 5"
     - name: Printing Github Variables in debug mode
       shell: bash
       run: |
@@ -176,7 +176,7 @@ runs:
 
             echo "::debug:: Test Classes = ${test_classes[@]}"
 
-            # Concatenate test class names with "--test classname"
+            # Concatenate test class names with "--tests classname"
             test_classes_concatenated=""
             for class_name in "${test_classes[@]}"; do
                 # Trim leading and trailing whitespace from class name
@@ -184,7 +184,7 @@ runs:
 
                 # Check if the trimmed class name ends with "Test" before adding
                 if [[ ! "$trimmed_class_name" =~ Test$ ]]; then
-                    test_classes_concatenated+="--test ${trimmed_class_name}Test "
+                    test_classes_concatenated+="--tests ${trimmed_class_name}Test "
                 fi
             done
 
