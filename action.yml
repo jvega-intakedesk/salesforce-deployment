@@ -71,7 +71,7 @@ runs:
       shell: bash
       run: |
         echo "::debug:: Add here the number of times you changed this and it broke:"
-        echo "::debug:: 22"
+        echo "::debug:: 25"
     - name: Printing Github Variables in debug mode
       shell: bash
       run: |
@@ -115,7 +115,7 @@ runs:
     - name: Install Salesforce CLI
       shell: bash
       run: |
-        # npm install -g @salesforce/cli@2.15.9
+        # npm install -g @salesforce/cli
         npm install -g @salesforce/cli
         sf version --verbose --json
     - name: Installing SF Git Delta Plugin
