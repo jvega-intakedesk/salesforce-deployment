@@ -67,6 +67,11 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Readme
+      shell: bash
+      run: |
+        echo "::debug:: Add here the number of times you changed this and it broke:"
+        echo "::debug:: 1"
     - name: Printing Github Variables in debug mode
       shell: bash
       run: |
@@ -127,37 +132,74 @@ runs:
       shell: bash
       run: >
         if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
-          content=$(cat ${{ inputs.DELTA_SOURCE_DIRECTORY }})
+            content=$(cat ${{ inputs.DELTA_SOURCE_DIRECTORY }})
 
-          test_classes=()
-          while IFS= read -r line; do
-              IFS='<' read -ra array <<< "$line"
-              for element in "${array[@]}"; do
-                  if [[ "$element" == "members>"* ]]; then
-                      member=$(echo "$element" | sed -e 's/members>//g')
-                      member_with_test="${member}Test"  # Append "Test" to the result of sed
-                      test_classes+=("$member_with_test")
-                  fi
-              done
-          done <<< "$content"
-          echo "::debug:: Test Classes = ${test_classes[@]}"
+            echo "::debug:: XML Content:"
+            echo "$content"
 
-          test_classes_csv=$(IFS=,; echo "${test_classes[*]}")
-          echo "$test_classes_csv" > "run-tests.txt"
-          echo "::debug:: Test Classes Content = $test_classes_csv"
+            test_classes=()
+            in_apex_class=false
 
-          # Generate the JSON structure for running the tests
-          json_content="{\"tests\": ["
-          for test_class in ${test_classes[@]}; do
-              json_content+="\"$test_class\","
-          done
-          # Remove the trailing comma from the last item
-          json_content="${json_content%,}"
-          json_content+="]}"
+            # Use awk to extract the relevant section
+            types_block=$(echo "$content" | awk '/<types>/,/<\/types>/')
 
-          # Output the JSON content to a file
-          echo "::debug:: JSON Content = $json_content"
-          echo "$json_content" > run-tests.json
+            if [ -n "$types_block" ]; then
+                echo "::debug:: Found types block for ApexClass:"
+                echo "$types_block"
+
+                in_apex_class=false
+                while IFS= read -r line; do
+                    if [[ "$line" == *"<name>ApexClass</name>"* ]]; then
+                        echo "::debug:: in_apex_class $in_apex_class"
+                        in_apex_class=true
+                    else
+                        echo "::debug:: line $line"
+                    fi
+                done <<< "$types_block"
+
+                echo "::debug:: in_apex_class $in_apex_class"
+                while IFS= read -r line; do
+                    if [ "$in_apex_class" = true ] && [[ "$line" == *"<members>"* ]]; then
+                        member=$(echo "$line" | sed -e 's/<members>//g' -e 's/<\/members>//g')
+                        echo "::debug:: member $member"
+                        if [[ ! "$member" =~ Test$ ]]; then
+                            test_classes+=("$member")
+                            echo "::debug:: Added class: $member"
+                        else
+                            echo "::debug:: Skipped member ending with 'Test': $member"
+                        fi
+                    fi
+                done <<< "$types_block"
+            else
+                echo "::debug:: Did not find types block for ApexClass"
+            fi
+
+            echo "::debug:: Test Classes = ${test_classes[@]}"
+
+            # Concatenate test class names with "--test classname"
+            test_classes_concatenated=""
+            for class_name in "${test_classes[@]}"; do
+                # Trim leading and trailing whitespace from class name
+                trimmed_class_name=$(echo "$class_name" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+
+                # Check if the trimmed class name ends with "Test" before adding
+                if [[ ! "$trimmed_class_name" =~ Test$ ]]; then
+                    test_classes_concatenated+="--test $trimmed_class_name "
+                fi
+            done
+
+            # Remove the trailing space from the concatenated string
+            test_classes_concatenated="${test_classes_concatenated%" "}"
+
+            echo "::debug:: Test Classes Content = $test_classes_concatenated"
+            echo "$test_classes_concatenated" > run-tests.txt
+
+            # Generate the JSON structure for running the tests
+            json_content="{\"tests\": [$test_classes_space_separated]}"
+
+            # Output the JSON content to a file
+            echo "::debug:: JSON Content = $json_content"
+            echo "$json_content" > run-tests.json
         fi
     - name: Environment Package(s) Deployment
       shell: bash
@@ -174,7 +216,7 @@ runs:
           deployFlags+=( --dry-run )
           deployFlags+=( --verbose )
           deployFlags+=( --test-level RunSpecifiedTests )
-          deployFlags+=( "--tests" "$classesToRun" )
+          deployFlags+=( "$classesToRun" )
         else
           deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
         fi
