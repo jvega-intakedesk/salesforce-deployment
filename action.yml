@@ -133,29 +133,39 @@ runs:
       shell: bash
       run: >
         if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
-            content=$(cat ${{ inputs.DELTA_SOURCE_DIRECTORY }})
+          content=$(cat ${{ inputs.DELTA_SOURCE_DIRECTORY }})
 
-            echo "::debug:: XML Content:"
-            echo "$content"
+          echo "::debug:: XML Content:"
+          echo "$content"
 
-            # Use xmlstarlet to extract the desired members
-            filtered_members=$(echo "$content" | xmlstarlet sel -N ns="http://soap.sforce.com/2006/04/metadata" \
-                -t -m "//ns:types[ns:name='ApexClass']/ns:members[not(contains(., 'Test'))]" -v . -n)
+          filtered_members=$(echo "$content" | xmlstarlet sel -N ns="http://soap.sforce.com/2006/04/metadata" \
+              -t -m "//ns:types[ns:name='ApexClass']/ns:members[not(contains(., 'Test'))]" -v . -n)
 
-            # Save each member into run-tests.txt with "Test" appended and quotes if there are spaces
-            > run-tests.txt
-            while IFS= read -r member; do
-                if [[ $member == *" "* ]]; then
-                    # Member contains spaces, enclose in double quotes
-                    echo "\"${member}Test\"" >> run-tests.txt
-                else
-                    echo "${member}Test" >> run-tests.txt
-                fi
-            done <<< "$filtered_members"
+          test_classes=()
 
-            # Debug output: Show the contents of run-tests.txt
-            echo "::debug:: Contents of run-tests.txt:"
-            cat run-tests.txt
+          echo "::debug:: filtered_members Content:"
+          echo "$filtered_members"
+
+          # Save each member into run-tests.txt with "Test" appended and quotes if there are spaces
+          > run-tests.txt
+
+          # Initialize a variable to hold the concatenated test classes
+          deployFlagsConcatenated=""
+
+          # Read each line from filtered_members and concatenate them into deployFlagsConcatenated
+          while IFS= read -r member; do
+              # Append "Test" to the member without quotes
+              deployFlagsConcatenated+="${member}Test, "
+          done <<< "$filtered_members"
+
+          # Remove the trailing comma and space from deployFlagsConcatenated
+          deployFlagsConcatenated="${deployFlagsConcatenated%, }"
+
+          # Save the concatenated test classes into run-tests.txt
+          echo "$deployFlagsConcatenated" > run-tests.txt
+
+          echo "::debug:: Contents of run-tests.txt:"
+          cat run-tests.txt
         fi
     - name: Environment Package(s) Deployment
       shell: bash
@@ -172,11 +182,11 @@ runs:
           deployFlags+=( --dry-run )
           deployFlags+=( --verbose )
           deployFlags+=( --test-level RunSpecifiedTests )
-          # deployFlags+=( --tests "\"$classesToRun\"" )
+          deployFlags+=( --tests "\"$classesToRun\"" )
 
-          while IFS= read -r line; do
-              deployFlags+=("--tests $line")
-          done < "run-tests.txt"
+          #while IFS= read -r line; do
+          #    deployFlags+=("--tests $line")
+          #done < "run-tests.txt"
 
         else
           deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
