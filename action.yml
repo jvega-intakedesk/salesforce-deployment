@@ -142,19 +142,20 @@ runs:
             filtered_members=$(echo "$content" | xmlstarlet sel -N ns="http://soap.sforce.com/2006/04/metadata" \
                 -t -m "//ns:types[ns:name='ApexClass']/ns:members[not(contains(., 'Test'))]" -v . -n)
 
-            # Append "--test " and "Test" to each filtered member and add them to the test_classes array
+            # Save each member into run-tests.txt with "Test" appended and quotes if there are spaces
             > run-tests.txt
-            test_classes=()
             while IFS= read -r member; do
-                test_classes+="${member}Test, "
+                if [[ $member == *" "* ]]; then
+                    # Member contains spaces, enclose in double quotes
+                    echo "\"${member}Test\"" >> run-tests.txt
+                else
+                    echo "${member}Test" >> run-tests.txt
+                fi
             done <<< "$filtered_members"
 
-            test_classes=$(echo "$test_classes" | sed 's/, *$//')
-
-            echo "::debug:: Test Classes: $test_classes";
-
-            # Save the test_classes array into a file using echo
-            echo "$test_classes" >> run-tests.txt
+            # Debug output: Show the contents of run-tests.txt
+            echo "::debug:: Contents of run-tests.txt:"
+            cat run-tests.txt
         fi
     - name: Environment Package(s) Deployment
       shell: bash
@@ -171,7 +172,12 @@ runs:
           deployFlags+=( --dry-run )
           deployFlags+=( --verbose )
           deployFlags+=( --test-level RunSpecifiedTests )
-          deployFlags+=( --tests "\"$classesToRun\"" )
+          # deployFlags+=( --tests "\"$classesToRun\"" )
+
+          while IFS= read -r line; do
+              deployFlags+=("--tests $line")
+          done < "run-tests.txt"
+
         else
           deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
         fi
