@@ -95,6 +95,12 @@ runs:
         echo "::debug::GITHUB_GRAPHQL_URL : $GITHUB_GRAPHQL_URL"
         echo "::debug::BRANCH_NAME : ${{ github.event.pull_request.head.ref }}"
         echo "::debug::GITHUB_REF : $GITHUB_REF"
+    - name: Installing Required system libraries
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt install default-jdk
+        sudo apt-get install xmlstarlet        
     - name: Install Salesforce CLI
       shell: bash
       run: |
@@ -105,15 +111,6 @@ runs:
       run: |
         echo y | sf plugins install sfdx-git-delta
         sf plugins
-    - name: Installing Java
-      shell: bash
-      run: |
-        sudo apt-get update
-        sudo apt install default-jdk
-    - name: Installing XMLStarLet
-      shell: bash
-      run: |
-        sudo apt-get install xmlstarlet
     - name: Environment Login
       shell: bash
       run: >
@@ -149,7 +146,7 @@ runs:
             > run-tests.txt
             test_classes=()
             while IFS= read -r member; do
-                test_classes+=" --tests \"${member}Test\" "
+                test_classes+="--tests \"${member}Test\" "
             done <<< "$filtered_members"
 
             echo "::debug:: Tests being executed: $test_classes"
