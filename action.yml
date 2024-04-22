@@ -104,10 +104,10 @@ runs:
       run: |
         # sudo apt-get update
         java --version
-        sudo apt-cache search openjdk
-        sudo apt-cache search xmlstarlet
-        sudo apt install default-jdk
+        # sudo apt install default-jdk
+        sudo apt install temurin-21-jdk
         java --version
+        sudo apt-cache search xmlstarlet
         sudo apt-get install xmlstarlet
         echo "::debug:: Node version before update"
         node -v
