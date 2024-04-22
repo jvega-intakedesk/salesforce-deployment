@@ -98,13 +98,11 @@ runs:
     - name: Installing Required system libraries
       shell: bash
       run: |
-        sudo rm -f /etc/apt/sources.list.d/archive_uri-*
-        sudo apt-get update || true
         java --version
-        sudo apt install default-jdk
-        # sudo apt install temurin-21-jdk
+        sudo snap install default-jdk
+        # sudo snap install temurin-21-jdk
         java --version
-        sudo apt-get install xmlstarlet
+        sudo snap install xmlstarlet
         echo "::debug:: Node version before update"
         node -v
         echo "::debug:: NPM version before update"
