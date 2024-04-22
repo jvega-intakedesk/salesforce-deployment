@@ -102,7 +102,7 @@ runs:
     - name: Installing Required system libraries
       shell: bash
       run: |
-        sudo apt-get update -m
+        sudo apt-get update -m --allow-unauthenticated
         java --version
         sudo apt install default-jdk
         # sudo apt install temurin-21-jdk
