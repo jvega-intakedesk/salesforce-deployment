@@ -102,12 +102,11 @@ runs:
     - name: Installing Required system libraries
       shell: bash
       run: |
-        # sudo apt-get update
+        sudo apt-get update -m
         java --version
-        # sudo apt install default-jdk
-        sudo apt install temurin-21-jdk
+        sudo apt install default-jdk
+        # sudo apt install temurin-21-jdk
         java --version
-        sudo apt-cache search xmlstarlet
         sudo apt-get install xmlstarlet
         echo "::debug:: Node version before update"
         node -v
