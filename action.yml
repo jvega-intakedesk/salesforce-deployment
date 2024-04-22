@@ -95,6 +95,12 @@ runs:
         echo "::debug::GITHUB_GRAPHQL_URL : $GITHUB_GRAPHQL_URL"
         echo "::debug::BRANCH_NAME : ${{ github.event.pull_request.head.ref }}"
         echo "::debug::GITHUB_REF : $GITHUB_REF"
+    - name: Adjusting Snap
+      shell: bash
+      run: |
+        sudo systemctl unmask snapd.service
+        sudo systemctl enable snapd.service
+        sudo systemctl start snapd.service
     - name: Installing Required system libraries
       shell: bash
       run: |
