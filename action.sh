@@ -13,11 +13,27 @@ DELTA_TO_SOURCE="HEAD"
 SF_AUTH_URL=''
 SF_AUTH_USERNAME="csilva@intakedesk.com"
 
+echo ""
 echo "RUNNING: README"
+echo "--------------------------------------------------------------------------------------------------------"
 echo "::debug:: Add here the number of times you changed this and it broke:"
-echo "::debug:: 30"
+echo "::debug::               ,     \    /      ,"
+echo "::debug::              / \    )\__/(     / \\"
+echo "::debug::             /   \  (_\  /_)   /   \\"
+echo "::debug::____________/_____\__\@  @/___/_____\___________"
+echo "::debug::|                    |\../|                    |"
+echo "::debug::|                     \VV/                     |"
+echo "::debug::|                                              |"
+echo "::debug::|                      35                      |"
+echo "::debug::|______________________________________________|"
+echo "::debug::        |    /\ /      \\       \ /\    |"
+echo "::debug::        |  /   V        ))       V   \  |"
+echo "::debug::        |/             //              \|"
+echo "::debug::                       V"
 
+echo ""
 echo "RUNNING: Printing Github Variables in debug mode"
+echo "--------------------------------------------------------------------------------------------------------"
 echo "::debug:: CI : $CI"
 echo "::debug::GITHUB_WORKFLOW : $GITHUB_WORKFLOW"
 echo "::debug::GITHUB_RUN_ID : $GITHUB_RUN_ID"
@@ -39,7 +55,9 @@ echo "::debug::GITHUB_GRAPHQL_URL : $GITHUB_GRAPHQL_URL"
 echo "::debug::BRANCH_NAME : ${{ github.event.pull_request.head.ref }}"
 echo "::debug::GITHUB_REF : $GITHUB_REF"
 
+echo ""
 echo "RUNNING: Installing Required system libraries"
+echo "--------------------------------------------------------------------------------------------------------"
 echo "::debug::  SKIPPED: sudo apt-get update"
 echo "::debug::  SKIPPED: sudo apt-get install default-jdk"
 echo "::debug::  SKIPPED: sudo apt-get install xmlstarlet"
@@ -47,24 +65,37 @@ echo "::debug::  SKIPPED: sudo npm install -g npm@latest"
 echo "::debug::  SKIPPED: sudo npm install -g n"
 echo "::debug::  SKIPPED: sudo n lts"
 
+echo ""
 echo "RUNNING: Install Salesforce CLI"
+echo "--------------------------------------------------------------------------------------------------------"
 echo "::debug::  SKIPPED: npm install -g @salesforce/cli"
 sf version --verbose --json
 
+echo ""
 echo "RUNNING: Installing SF Git Delta Plugin"
+echo "--------------------------------------------------------------------------------------------------------"
 echo "::debug::  SKIPPED: echo y | sf plugins install sfdx-git-delta"
 sf plugins
 
+echo ""
 echo "RUNNING: Environment Login"
+echo "--------------------------------------------------------------------------------------------------------"
 echo "::debug::  SKIPPED: sf org login sfdx-url --set-default --sfdx-url-file <(echo \"$SF_AUTH_URL\")"
 
+echo ""
 echo "RUNNING: Checkout source code"
+echo "--------------------------------------------------------------------------------------------------------"
+echo "::debug::  SKIPPED: 3rd party"
 
+echo ""
 echo "RUNNING: Creating Delta packages for new, modified or deleted metadata"
+echo "--------------------------------------------------------------------------------------------------------"
 echo "::debug:: Command being executed: sf sgd source delta --from \"$DELTA_FROM_SOURCE\" --to \"$DELTA_TO_SOURCE\" --output . --source $MANIFEST_SOURCE_DIRECTORY/ --generate-delta"
 sf sgd source delta --from "$DELTA_FROM_SOURCE" --to "$DELTA_TO_SOURCE" --output . --source $MANIFEST_SOURCE_DIRECTORY/ --generate-delta
 
+echo ""
 echo "RUNNING: Determining Specified Tests"
+echo "--------------------------------------------------------------------------------------------------------"
 if [ "$DRY_RUN" = "true" ]; then
     content=$(cat $DELTA_SOURCE_DIRECTORY)
 
@@ -95,10 +126,14 @@ if [ "$DRY_RUN" = "true" ]; then
     echo "::debug:: $runTestsContent"
 fi
 
+echo ""
 echo "RUNNING: Environment Package(s) Deployment"
+echo "--------------------------------------------------------------------------------------------------------"
 
+# To ensure that we are always testing with dry-run
 deployFlags=(
     --wait $TIMEOUT
+    --dry-run
 )
 
 testRunContents=$(cat run-tests.txt);
@@ -108,7 +143,7 @@ hasTests=false
 
 if [ "$DRY_RUN" = "true" ]; then
     classesToRun=$(cat "run-tests.txt")
-    deployFlags+=( --dry-run )
+    # deployFlags+=( --dry-run )
     deployFlags+=( --verbose )
     
     # deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
@@ -160,4 +195,4 @@ fi
 
 echo "::debug:: Command being executed: sf project deploy start ${deployFlags[@]}"
 
-# sf project deploy start "${deployFlags[@]}"
+sf project deploy start "${deployFlags[@]}"
