@@ -99,7 +99,8 @@ runs:
       shell: bash
       run: |
         sudo cat /etc/apt/sources.list
-        sudo sed -i 's/^#\([^#]\|$\)/\1/' /etc/apt/sources.list
+        sudo sed -i 's/^# \(deb\)/\1/' /etc/apt/sources.list
+        echo "::debug:: New version"
         sudo cat /etc/apt/sources.list
     - name: Installing Required system libraries
       shell: bash
