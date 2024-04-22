@@ -130,7 +130,7 @@ runs:
     - name: Determining Specified Tests
       shell: bash
       run: >
-        if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
+        if [ "${{ inputs.DRY_RUN }}" = "true" ] && [ -f "${{ inputs.DELTA_SOURCE_DIRECTORY }}" ]; then
           content=$(cat ${{ inputs.DELTA_SOURCE_DIRECTORY }})
 
           echo "::debug:: XML Content:"
@@ -158,6 +158,9 @@ runs:
           echo "::debug:: Contents of run-tests.txt:"
           runTestsContent=$(cat run-tests.txt)
           echo "::debug:: $runTestsContent"
+        else
+            echo "::debug:: No package changes found"
+            > run-tests.txt
         fi
     - name: Environment Package(s) Deployment
       shell: bash

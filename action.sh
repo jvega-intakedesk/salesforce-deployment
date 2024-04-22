@@ -96,7 +96,7 @@ sf sgd source delta --from "$DELTA_FROM_SOURCE" --to "$DELTA_TO_SOURCE" --output
 echo ""
 echo "RUNNING: Determining Specified Tests"
 echo "--------------------------------------------------------------------------------------------------------"
-if [ "$DRY_RUN" = "true" ]; then
+if [ "$DRY_RUN" = "true" ] && [ -f "$DELTA_SOURCE_DIRECTORY" ]; then
     content=$(cat $DELTA_SOURCE_DIRECTORY)
 
     echo "::debug:: XML Content:"
@@ -124,6 +124,9 @@ if [ "$DRY_RUN" = "true" ]; then
     echo "::debug:: Contents of run-tests.txt:"
     runTestsContent=$(cat run-tests.txt)
     echo "::debug:: $runTestsContent"
+else
+    echo "::debug:: No package changes found"
+    > run-tests.txt
 fi
 
 echo ""
@@ -195,4 +198,4 @@ fi
 
 echo "::debug:: Command being executed: sf project deploy start ${deployFlags[@]}"
 
-sf project deploy start "${deployFlags[@]}"
+# sf project deploy start "${deployFlags[@]}"
