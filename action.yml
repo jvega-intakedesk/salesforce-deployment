@@ -147,7 +147,7 @@ runs:
           content=$(cat ${{ inputs.DELTA_SOURCE_DIRECTORY }})
 
           echo "::debug:: XML Content:"
-          echo "$content"
+          echo "::debug:: $content"
 
           filtered_members=$(echo "$content" | xmlstarlet sel -N ns="http://soap.sforce.com/2006/04/metadata" \
               -t -m "//ns:types[ns:name='ApexClass']/ns:members[not(contains(., 'Test'))]" -v . -n)
