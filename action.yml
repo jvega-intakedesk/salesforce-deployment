@@ -100,8 +100,7 @@ runs:
       run: |
         # sudo apt-get update
         java --version
-        sudo apt install default-jre
-        java --version
+        # sudo apt install default-jdk
         sudo apt-get install xmlstarlet
         echo "::debug:: Node version before update"
         node -v
