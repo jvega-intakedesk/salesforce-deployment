@@ -102,6 +102,7 @@ runs:
     - name: Installing Required system libraries
       shell: bash
       run: |
+        echo "::debug:: Command being executed: sudo apt-get update -m --allow-unauthenticated "
         sudo apt-get update -m --allow-unauthenticated
         java --version
         sudo apt install default-jdk
