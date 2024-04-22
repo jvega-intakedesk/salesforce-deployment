@@ -99,7 +99,9 @@ runs:
       shell: bash
       run: |
         # sudo apt-get update
-        sudo apt install default-jdk
+        java --version
+        sudo apt install default-jre
+        java --version
         sudo apt-get install xmlstarlet
         echo "::debug:: Node version before update"
         node -v
