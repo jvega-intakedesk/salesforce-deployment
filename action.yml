@@ -98,7 +98,7 @@ runs:
     - name: Installing Required system libraries
       shell: bash
       run: |
-        sudo apt-get update
+        # sudo apt-get update
         sudo apt install default-jdk
         sudo apt-get install xmlstarlet
         echo "::debug:: Node version before update"
@@ -146,7 +146,7 @@ runs:
         if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
           content=$(cat ${{ inputs.DELTA_SOURCE_DIRECTORY }})
 
-          # echo "::debug:: XML Content:"
+          echo "::debug:: XML Content:"
           # echo "::debug:: $content"
 
           filtered_members=$(echo "$content" | xmlstarlet sel -N ns="http://soap.sforce.com/2006/04/metadata" \
@@ -155,7 +155,7 @@ runs:
           test_classes=()
 
           echo "::debug:: filtered_members Content:"
-          echo "$filtered_members"
+          # echo "$filtered_members"
 
           # Save each member into run-tests.txt with "Test" appended and quotes if there are spaces
           > run-tests.txt
@@ -176,7 +176,7 @@ runs:
           echo "$deployFlagsConcatenated" > run-tests.txt
 
           echo "::debug:: Contents of run-tests.txt:"
-          cat run-tests.txt
+          # cat run-tests.txt
         fi
     - name: Environment Package(s) Deployment
       shell: bash
