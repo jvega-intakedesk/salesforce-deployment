@@ -99,7 +99,7 @@ runs:
       shell: bash
       run: |
         sudo rm -f /etc/apt/sources.list.d/archive_uri-*
-        sudo apt-get update
+        sudo apt-get update || true
         java --version
         sudo apt install default-jdk
         # sudo apt install temurin-21-jdk
