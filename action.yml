@@ -95,19 +95,11 @@ runs:
         echo "::debug::GITHUB_GRAPHQL_URL : $GITHUB_GRAPHQL_URL"
         echo "::debug::BRANCH_NAME : ${{ github.event.pull_request.head.ref }}"
         echo "::debug::GITHUB_REF : $GITHUB_REF"
-    - name: Installing APT Repos
-      shell: bash
-      run: |
-        sudo cat /etc/apt/sources.list
-        sudo sed -i 's/^# \(deb\)/\1/' /etc/apt/sources.list
-        echo "::debug:: New version"
-        sudo cat /etc/apt/sources.list
     - name: Installing Required system libraries
       shell: bash
       run: |
-        sudo apt-get autoclean
-        sudo apt-get clean
-        sudo apt-get update -m --allow-unauthenticated
+        sudo rm -f /etc/apt/sources.list.d/archive_uri-*
+        sudo apt-get update
         java --version
         sudo apt install default-jdk
         # sudo apt install temurin-21-jdk
