@@ -67,6 +67,11 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: README
+      shell: bash
+      run: |
+        echo "::debug:: Add here the number of times you changed this and it broke:"
+        echo "::debug:: 30"
     - name: Printing Github Variables in debug mode
       shell: bash
       run: |
@@ -90,26 +95,29 @@ runs:
         echo "::debug::GITHUB_GRAPHQL_URL : $GITHUB_GRAPHQL_URL"
         echo "::debug::BRANCH_NAME : ${{ github.event.pull_request.head.ref }}"
         echo "::debug::GITHUB_REF : $GITHUB_REF"
+    - name: Installing Required system libraries
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install default-jdk
+        sudo apt-get install xmlstarlet
+        sudo npm install -g npm@latest
+        sudo npm install -g n
+        sudo n lts
     - name: Install Salesforce CLI
       shell: bash
       run: |
         npm install -g @salesforce/cli
-        sf --version
+        sf version --verbose --json
     - name: Installing SF Git Delta Plugin
       shell: bash
       run: |
         echo y | sf plugins install sfdx-git-delta
         sf plugins
-    - name: Installing Java
-      shell: bash
-      run: |
-        sudo apt-get update
-        sudo apt install default-jdk
     - name: Environment Login
       shell: bash
       run: >
-        sf org login sfdx-url --set-default --sfdx-url-file <(echo "${{
-        inputs.SF_AUTH_URL }}")
+        sf org login sfdx-url --set-default --sfdx-url-file <(echo "${{ inputs.SF_AUTH_URL }}")
     - name: Checkout source code
       uses: actions/checkout@v4
       with:
@@ -117,47 +125,42 @@ runs:
     - name: Creating Delta packages for new, modified or deleted metadata
       shell: bash
       run: >
-        echo "::debug::Command being executed: sf sgd source delta --from \"${{
-        inputs.DELTA_FROM_SOURCE }}\" --to \"${{ inputs.DELTA_TO_SOURCE }}\"
-        --output . --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/
-        --generate-delta"
-
+        echo "::debug:: Command being executed: sf sgd source delta --from \"${{ inputs.DELTA_FROM_SOURCE }}\" --to \"${{ inputs.DELTA_TO_SOURCE }}\" --output . --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/ --generate-delta"
         sf sgd source delta --from "${{ inputs.DELTA_FROM_SOURCE }}" --to "${{ inputs.DELTA_TO_SOURCE }}" --output . --source ${{ inputs.MANIFEST_SOURCE_DIRECTORY }}/ --generate-delta
     - name: Determining Specified Tests
       shell: bash
       run: >
-        if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
+        if [ "${{ inputs.DRY_RUN }}" = "true" ] && [ -f "${{ inputs.DELTA_SOURCE_DIRECTORY }}" ]; then
           content=$(cat ${{ inputs.DELTA_SOURCE_DIRECTORY }})
 
+          echo "::debug:: XML Content:"
+          echo "::debug:: $content"
+
+          filtered_members=$(echo "$content" | xmlstarlet sel -N ns="http://soap.sforce.com/2006/04/metadata" \
+              -t -m "//ns:types[ns:name='ApexClass']/ns:members[not(contains(., 'Test'))]" -v . -n)
+
           test_classes=()
-          while IFS= read -r line; do
-              IFS='<' read -ra array <<< "$line"
-              for element in "${array[@]}"; do
-                  if [[ "$element" == "members>"* ]]; then
-                      member=$(echo "$element" | sed -e 's/members>//g')
-                      test_classes+=("$member")
-                  fi
-              done
-          done <<< "$content"
-          echo "::debug::${test_classes[@]}"
 
-          # Generate the JSON structure for running the tests
-          variable_content=""
-          json_content="{\"tests\": ["
-          for test_class in ${test_classes[@]}; do
-              json_content+="\"$test_class\","
-              variable_content+="\"$test_class\","
-          done
-          # Remove the trailing comma from the last item
-          json_content="${json_content%,}"
-          json_content+="]}"
+          echo "::debug:: filtered_members Content:"
+          echo "::debug:: $filtered_members"
 
-          # Output the JSON content to a file
-          # echo "$json_content" > run-tests.json
-          echo "::debug::$variable_content"
-          echo "RUN_SPECIFIED_TESTS_SELECTED=$variable_content" >> "$GITHUB_OUTPUT"
+          # Save each member into run-tests.txt with "Test" appended and quotes if there are spaces
+          > run-tests.txt
+
+          # Read each line from filtered_members and concatenate them into deployFlagsConcatenated
+          while IFS= read -r member; do
+              # Append "Test" to the member without quotes
+              if [[ -n "$member" ]]; then
+                  echo "${member}Test " >> run-tests.txt
+              fi
+          done <<< "$filtered_members"
+
+          echo "::debug:: Contents of run-tests.txt:"
+          runTestsContent=$(cat run-tests.txt)
+          echo "::debug:: $runTestsContent"
         else
-          echo "RUN_SPECIFIED_TESTS_SELECTED=\"\"" >> "$GITHUB_OUTPUT"
+            echo "::debug:: No package changes found"
+            > run-tests.txt
         fi
     - name: Environment Package(s) Deployment
       shell: bash
@@ -166,25 +169,44 @@ runs:
             --wait ${{ inputs.TIMEOUT }}
         )
 
+        testRunContents=$(cat run-tests.txt);
+        echo "::debug:: $testRunContents"
+
+        hasTests=false
 
         if [ "${{ inputs.DRY_RUN }}" = "true" ]; then
+          classesToRun=$(cat "run-tests.txt")
           deployFlags+=( --dry-run )
           deployFlags+=( --verbose )
-          deployFlags+=( --test-level RunSpecifiedTests )
-          deployFlags+=( --tests $RUN_SPECIFIED_TESTS_SELECTED )
+          
+          # deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
+
+          # deployFlags+=( --tests $classesToRun )
+          while IFS= read -r line; do
+              if [[ -n "$line" ]]; then
+                  hasTests=true
+                  deployFlags+=(--tests $line)
+              fi
+          done < "run-tests.txt"
+          echo "::debug:: HAS TESTS $hasTests"
+
+          if [ "$hasTests" = "false" ]; then
+              deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
+          else
+              deployFlags+=( --test-level RunSpecifiedTests )
+          fi
+
         else
           deployFlags+=( --test-level ${{ inputs.TEST_LEVEL }} )
         fi
-
 
         if [ ! -z "${{ inputs.SF_AUTH_USERNAME }}" ]; then
           deployFlags+=( -o ${{ inputs.SF_AUTH_USERNAME }} )
         fi
 
-
         if [ -f ${{ inputs.DELTA_SOURCE_DIRECTORY }} ]; then
-          echo "::debug::Deploying Package(s) Changes: ${{ inputs.DELTA_FROM_SOURCE }} to ${{ inputs.DELTA_TO_SOURCE }} @ $GITHUB_REPOSITORY"
-          echo "::debug::Package Contents: $( cat ${{ inputs.DELTA_SOURCE_DIRECTORY }} )"
+          echo "::debug:: Deploying Package(s) Changes: ${{ inputs.DELTA_FROM_SOURCE }} to ${{ inputs.DELTA_TO_SOURCE }} @ $GITHUB_REPOSITORY"
+          echo "::debug:: Delta Contents: $( cat ${{ inputs.DELTA_SOURCE_DIRECTORY }} )"
 
           deployFlags+=(
               --manifest ${{ inputs.DELTA_SOURCE_DIRECTORY }}
@@ -193,19 +215,17 @@ runs:
           echo "::debug::No changes to deploy between $GITHUB_BASE_REF and $GITHUB_HEAD_REF @ $GITHUB_REPOSITORY"
         fi
 
-
         if [ -f destructiveChanges/destructiveChanges.xml ]; then
-          echo "::debug::Deploying Package(s) Destructive Changes: ${{ inputs.DELTA_FROM_SOURCE }} to ${{ inputs.DELTA_TO_SOURCE }} @ $GITHUB_REPOSITORY"
-          echo "::debug::Package Contents: $( cat destructiveChanges/destructiveChanges.xml )"
+          echo "::debug:: Deploying Package(s) Destructive Changes: ${{ inputs.DELTA_FROM_SOURCE }} to ${{ inputs.DELTA_TO_SOURCE }} @ $GITHUB_REPOSITORY"
+          echo "::debug:: Destructive Changes Contents: $( cat destructiveChanges/destructiveChanges.xml )"
 
           deployFlags+=(
               --post-destructive-changes destructiveChanges/destructiveChanges.xml
           )
         else
-          echo "::debug::No Destructive changes to deploy between ${{ inputs.DELTA_FROM_SOURCE }} to ${{ inputs.DELTA_TO_SOURCE }} @ $GITHUB_REPOSITORY"
+          echo "::debug:: No Destructive changes to deploy between ${{ inputs.DELTA_FROM_SOURCE }} to ${{ inputs.DELTA_TO_SOURCE }} @ $GITHUB_REPOSITORY"
         fi
 
-
-        echo "::debug::Command being executed: sf project deploy start ${deployFlags[@]}"
+        echo "::debug:: Command being executed: sf project deploy start ${deployFlags[@]}"
 
         sf project deploy start "${deployFlags[@]}"
