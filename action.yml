@@ -18,6 +18,7 @@ inputs:
       - RunSpecifiedTests
       - RunLocalTests
       - RunAllTestsInOrg
+      - RunRelevantTests
   TIMEOUT:
     description: Salesforce project deploy --wait flag value. Timeout in minutes for the command to complete and display results. Defaults to 30.
     type: number
@@ -54,6 +55,18 @@ inputs:
     description: The Salesforce username for login. Salesforce project deploy `-o` flag.
     type: string
     required: true
+  SF_CLI_VERSION:
+    description: Salesforce CLI version installed with npm. Pinned so a new CLI release can't break deployments. Defaults to 2.156.8.
+    type: string
+    default: 2.156.8
+  SGD_VERSION:
+    description: sfdx-git-delta plugin version. Defaults to 6.45.1.
+    type: string
+    default: 6.45.1
+  FETCH_DEPTH:
+    description: actions/checkout fetch-depth. Must reach back to DELTA_FROM_SOURCE (2 is enough for HEAD^1). 0 fetches the full history. Defaults to 0.
+    type: number
+    default: 0
 
 runs:
   using: composite
@@ -82,33 +95,64 @@ runs:
           echo "::debug::BRANCH_NAME : ${{ github.event.pull_request.head.ref }}"
           echo "::debug::GITHUB_REF : $GITHUB_REF"
 
+      # Writes a retry helper the later steps source: each attempt is capped at
+      # 5 minutes and retried up to 3 times, so a slow or failing npm/Salesforce
+      # call (timeouts, 404s, 5xx) can't hang or fail the job on the first try.
+      - name: Preparing retry helper
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/retry.sh" <<'SH'
+          retry() {
+            local attempt=1
+            until timeout 300 "$@"; do
+              if [ "$attempt" -ge 3 ]; then
+                echo "::error::Failed after $attempt attempts: $*"
+                return 1
+              fi
+              echo "::warning::Attempt $attempt failed: $*. Retrying in $((attempt * 15))s"
+              sleep $((attempt * 15))
+              attempt=$((attempt + 1))
+            done
+          }
+          SH
+
+      - name: Caching npm downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: sf-cli-${{ runner.os }}-${{ inputs.SF_CLI_VERSION }}-sgd-${{ inputs.SGD_VERSION }}
+
       - name: Install Salesforce CLI
         shell: bash
         run: |
-          npm install -g @salesforce/cli
+          source "$RUNNER_TEMP/retry.sh"
+          retry npm install -g --no-audit --no-fund "@salesforce/cli@${{ inputs.SF_CLI_VERSION }}"
           sf --version
 
+      # sfdx-git-delta isn't signed, so allow-list it instead of piping "y" into the prompt.
       - name: Installing SF Git Delta Plugin
         shell: bash
         run: |
-          echo y | sf plugins install sfdx-git-delta
+          source "$RUNNER_TEMP/retry.sh"
+          mkdir -p ~/.config/sf
+          echo '["sfdx-git-delta"]' > ~/.config/sf/unsignedPluginAllowList.json
+          retry sf plugins install "sfdx-git-delta@${{ inputs.SGD_VERSION }}"
           sf plugins
-
-      - name: Installing Java
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt install default-jdk
 
       - name: Environment Login
         shell: bash
         run: |
-          sf org login sfdx-url --set-default --sfdx-url-file <(echo "${{ inputs.SF_AUTH_URL }}")
+          source "$RUNNER_TEMP/retry.sh"
+          # A file rather than <(...) so every retry attempt can re-read it.
+          authFile="$RUNNER_TEMP/sfdx-auth-url"
+          trap 'rm -f "$authFile"' EXIT
+          echo "${{ inputs.SF_AUTH_URL }}" > "$authFile"
+          retry sf org login sfdx-url --set-default --sfdx-url-file "$authFile"
 
       - name: 'Checkout source code'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: ${{ inputs.FETCH_DEPTH }}
 
       - name: Creating Delta packages for new, modified or deleted metadata
         shell: bash
@@ -156,4 +200,18 @@ runs:
           fi
 
           echo "::debug::Command being executed: sf project deploy start ${deployFlags[@]}"
+          set +e
           sf project deploy start "${deployFlags[@]}"
+          rc=$?
+
+          # Never re-run "deploy start" on failure: if --wait ran out, the deploy is
+          # still running in Salesforce, so keep watching it instead of starting a second one.
+          if [ $rc -ne 0 ]; then
+            status=$(sf project deploy report --use-most-recent --json 2>/dev/null | jq -r '.result.status // empty')
+            if [[ "$status" =~ ^(InProgress|Pending|Canceling)$ ]]; then
+              echo "::warning::Deploy still $status after ${{ inputs.TIMEOUT }} minutes; resuming instead of starting a new deploy"
+              sf project deploy resume --use-most-recent --wait ${{ inputs.TIMEOUT }}
+              rc=$?
+            fi
+          fi
+          exit $rc
