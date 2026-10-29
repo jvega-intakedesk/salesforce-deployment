@@ -14,11 +14,14 @@ A ***delta*** is the difference between the files or 2 set of files. In the cont
 |DELTA_FROM_SOURCE|N|string|-|-|The from source that will be used on the sgd delta.|
 |DELTA_TO_SOURCE|N|string|-|-|The to source that will be used on the sgd delta.|
 |DRY_RUN|Y|boolean|true|-|Enable or disable the Salesforce project deploy `--dry-run` and `--verbose` flags.|
-|TEST_LEVEL|Y|option|RunLocalTests|NoTestRun, RunSpecifiedTests, RunLocalTests, RunAllTestsInOrg|Salesforce project deploy `--test-level` parameter. Defaults to RunLocalTests.|
+|TEST_LEVEL|Y|option|RunLocalTests|NoTestRun, RunSpecifiedTests, RunLocalTests, RunAllTestsInOrg, RunRelevantTests|Salesforce project deploy `--test-level` parameter. Defaults to RunLocalTests.|
 |TIMEOUT|Y|number|30|-|Salesforce project deploy `--wait` flag value. Timeout in minutes for the command to complete and display results|
 |MANIFEST_SOURCE_DIRECTORY|Y|string|force-app|-|Source files path for project manifest generation `--source-dir` flag.|
 |MANIFEST_OUTPUT_DIRECTORY|Y|string|manifest|-|Output directoryfor project manifest generation `--output-dir` flag.|
 |PACKAGE_SOURCE_DIRECTORY|Y|string|manifest/package.xml|-|Salesforce project deploy `--manifest` file path flag.|
+|SF_CLI_VERSION|Y|string|2.156.8|-|Salesforce CLI version installed with npm.|
+|SGD_VERSION|Y|string|6.45.1|-|sfdx-git-delta plugin version.|
+|FETCH_DEPTH|Y|number|0|-|`actions/checkout` fetch depth. Must reach `DELTA_FROM_SOURCE`; `2` is enough for `HEAD^1`, `0` fetches all history.|
 
 
 ## Usage
