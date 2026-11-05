@@ -133,6 +133,23 @@ runs:
             deployFlags+=( -o ${{ inputs.SF_AUTH_USERNAME }} )
           fi
 
+          # sfdx-git-delta always writes package.xml and destructiveChanges.xml,
+          # even when the delta is empty (only a <version> tag). Deploying an
+          # empty manifest makes `sf project deploy start` fail with
+          # NothingToDeploy, so bail out early when neither file lists any <types>.
+          hasChanges=false
+          if [ -f ${{ inputs.DELTA_SOURCE_DIRECTORY }} ] && grep -q "<types>" ${{ inputs.DELTA_SOURCE_DIRECTORY }}; then
+            hasChanges=true
+          fi
+          if [ -f destructiveChanges/destructiveChanges.xml ] && grep -q "<types>" destructiveChanges/destructiveChanges.xml; then
+            hasChanges=true
+          fi
+
+          if [ "$hasChanges" = "false" ]; then
+            echo "::notice::No metadata changes between ${{ inputs.DELTA_FROM_SOURCE }} and ${{ inputs.DELTA_TO_SOURCE }} @ $GITHUB_REPOSITORY. Nothing to deploy."
+            exit 0
+          fi
+
           if [ -f ${{ inputs.DELTA_SOURCE_DIRECTORY }} ]; then
             echo "::debug::Deploying Package(s) Changes: ${{ inputs.DELTA_FROM_SOURCE }} to ${{ inputs.DELTA_TO_SOURCE }} @ $GITHUB_REPOSITORY"
             echo "::debug::Package Contents: $( cat ${{ inputs.DELTA_SOURCE_DIRECTORY }} )"
