@@ -106,7 +106,7 @@ runs:
           sf org login sfdx-url --set-default --sfdx-url-file <(echo "${{ inputs.SF_AUTH_URL }}")
 
       - name: 'Checkout source code'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
