@@ -106,7 +106,7 @@ runs:
           sf org login sfdx-url --set-default --sfdx-url-file <(echo "${{ inputs.SF_AUTH_URL }}")
 
       - name: 'Checkout source code'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -131,6 +131,23 @@ runs:
 
           if [ ! -z "${{ inputs.SF_AUTH_USERNAME }}" ]; then
             deployFlags+=( -o ${{ inputs.SF_AUTH_USERNAME }} )
+          fi
+
+          # sfdx-git-delta always writes package.xml and destructiveChanges.xml,
+          # even when the delta is empty (only a <version> tag). Deploying an
+          # empty manifest makes `sf project deploy start` fail with
+          # NothingToDeploy, so bail out early when neither file lists any <types>.
+          hasChanges=false
+          if [ -f ${{ inputs.DELTA_SOURCE_DIRECTORY }} ] && grep -q "<types>" ${{ inputs.DELTA_SOURCE_DIRECTORY }}; then
+            hasChanges=true
+          fi
+          if [ -f destructiveChanges/destructiveChanges.xml ] && grep -q "<types>" destructiveChanges/destructiveChanges.xml; then
+            hasChanges=true
+          fi
+
+          if [ "$hasChanges" = "false" ]; then
+            echo "::notice::No metadata changes between ${{ inputs.DELTA_FROM_SOURCE }} and ${{ inputs.DELTA_TO_SOURCE }} @ $GITHUB_REPOSITORY. Nothing to deploy."
+            exit 0
           fi
 
           if [ -f ${{ inputs.DELTA_SOURCE_DIRECTORY }} ]; then
